@@ -20,7 +20,7 @@ router.post('/', checkAuth, upload.single('resume'), async (req, res) => {
 
     // Returns exactly the JSON structure your Frontend Lesson requested!
     res.status(200).json({
-      url: req.file.path,
+      resumeUrl: req.file.path,
       message: 'Resume safely uploaded and saved to your profile!'
     });
   } catch (error) {

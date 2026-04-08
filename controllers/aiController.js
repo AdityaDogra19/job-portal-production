@@ -1,70 +1,79 @@
 const pdfParse = require('pdf-parse');
 const { OpenAI } = require('openai');
+const fs = require('fs');
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// Helper: Read PDF buffer from either a local disk file or a remote URL
+const getPdfBuffer = async (file) => {
+  // If file was saved to disk (no Cloudinary), read it directly - no fetch needed!
+  if (file.buffer) {
+    return file.buffer; // memoryStorage returns buffer directly
+  }
+  if (file.path && !file.path.startsWith('http')) {
+    // Disk storage: local file path like ./uploads/123-file.pdf
+    return fs.readFileSync(file.path);
+  }
+  // Cloudinary storage: file.path is a full HTTPS URL
+  const response = await fetch(file.path);
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+};
 
 // @route   POST /api/ai/analyze-resume
 const analyzeResume = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'Please upload a PDF resume' });
 
-    // 1. TEXT EXTRACTION LOGIC
-    // We fetch the PDF from the Cloudinary URL we generated natively in our Multer pipeline,
-    // convert the raw binary into a 'Buffer', and use pdf-parse to rip 
-    // the semantic English readable text out of the document!
-    const response = await fetch(req.file.path);
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // Check if OpenAI key is configured
+    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'sk-your-openai-api-key-here') {
+      return res.status(503).json({ 
+        message: 'OpenAI API key not configured. Please add your OPENAI_API_KEY to the .env file.',
+        hint: 'Get your key from https://platform.openai.com/api-keys'
+      });
+    }
+
+    // 1. TEXT EXTRACTION - works for both disk and Cloudinary storage
+    const buffer = await getPdfBuffer(req.file);
     
     let pdfData;
     try {
-        pdfData = await pdfParse(buffer);
+      pdfData = await pdfParse(buffer);
     } catch(e) {
-        return res.status(400).json({ message: 'Failed to extract text from this PDF.' });
+      return res.status(400).json({ message: 'Failed to extract text from this PDF. Make sure it contains readable text (not just images).' });
     }
     
     const resumeText = pdfData.text;
-
-    if (!resumeText || resumeText.trim().length === 0) {
-      return res.status(400).json({ message: 'Ensure your PDF contains readable text.' });
+    if (!resumeText || resumeText.trim().length < 50) {
+      return res.status(400).json({ message: 'Resume appears empty or has too little text to analyze.' });
     }
 
     // 2. PROMPT ENGINEERING
-    // We command the AI using strict JSON formatting Instructions.
     const aiPrompt = `
       You are an elite Senior Technical Recruiter.
       Analyze the following resume text.
       Return your analysis STRICTLY in minified JSON format exactly matching this structure, with no additional markdown, text, or \`\`\` block tags:
-      {
-        "score": (Extract a number from 1 to 100 based on grammar, impact, tech stack relevance, and structure),
-        "missingSkills": (Array of 3-5 standard missing industry skills),
-        "strengths": (Array of 3-5 strongest points in this resume),
-        "suggestions": (Array of 3-5 actionable tips to improve ATS readability)
-      }
+      {"score":(number 1-100),"missingSkills":["skill1","skill2","skill3"],"strengths":["strength1","strength2","strength3"],"suggestions":["tip1","tip2","tip3"]}
 
       Resume Text:
-      ${resumeText}
+      ${resumeText.substring(0, 3000)}
     `;
 
-    // 3. OPENAI API INTERACTION
-    // We send our prompt securely to OpenAI
+    // 3. OPENAI API
     const aiResponse = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo", // Cost-effective model perfect for basic text parsing
+      model: "gpt-3.5-turbo",
       messages: [{ role: "user", content: aiPrompt }],
-      temperature: 0.3, // Lower temperature forces the AI to stick strictly to our structural UI rules!
-      max_tokens: 500,  // FIXED: High API Cost limits
+      temperature: 0.3,
+      max_tokens: 500,
     });
 
-    // 4. PARSING THE AI RESPONSE
+    // 4. PARSE RESPONSE
     const rawAiText = aiResponse.choices[0].message.content.trim();
-    // Safety Catch: Sometimes AI responds with "```json ... ```" even when told not to!
-    const cleanJsonText = rawAiText.replace(/```json/gi, '').replace(/```/gi, ''); 
+    const cleanJsonText = rawAiText.replace(/```json/gi, '').replace(/```/gi, '').trim();
     const parsedData = JSON.parse(cleanJsonText);
 
-    // 5. RETURN EXACT SPECS
-    // We map precisely to the Object requested by the Frontend React Developer
     res.status(200).json({
       score: parsedData.score,
       missingSkills: parsedData.missingSkills || [],
@@ -74,7 +83,7 @@ const analyzeResume = async (req, res) => {
 
   } catch (error) {
     console.error("AI Analysis Error:", error);
-    res.status(500).json({ message: 'AI Analysis failed', error: error.message });
+    res.status(500).json({ message: 'AI Analysis failed: ' + error.message });
   }
 };
 

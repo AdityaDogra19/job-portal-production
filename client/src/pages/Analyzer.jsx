@@ -24,7 +24,8 @@ export default function Analyzer() {
       const res = await api.post('/ai/analyze-resume', formData);
       setAnalysis(res.data); // This pushes the JSON straight into our Tracker
     } catch (error) {
-      alert("AI Analysis Failed! Make sure you are logged in.");
+      const errMsg = error.response?.data?.message || error.message || 'Analysis failed. Check your connection and try again.';
+      alert("Error: " + errMsg);
       console.error(error);
     } finally {
       setLoading(false);

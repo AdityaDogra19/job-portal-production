@@ -115,7 +115,7 @@ app.get('/', (req, res) => {
 });
 
 // Setup server to listen on a specific port
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // CRITICAL: We must start the 'server' (HTTP), NOT 'app' (Express) directly!
 server.listen(PORT, () => {
