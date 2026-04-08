@@ -19,4 +19,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// 3. Response Interceptor: Catch global errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // If the token is expired or invalid, kick them out
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

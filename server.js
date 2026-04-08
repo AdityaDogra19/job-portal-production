@@ -1,5 +1,8 @@
 require('dotenv').config(); // Load environment variables from .env file
 const express = require('express');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
 
 // Import routes
@@ -12,6 +15,7 @@ const chatRoutes = require('./routes/chatRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const aiRoutes = require('./routes/aiRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 const http = require('http');
 const { Server } = require('socket.io');
@@ -19,6 +23,18 @@ const { Server } = require('socket.io');
 // Initialize the Express app
 const app = express();
 const cors = require('cors');
+
+// --- SECURITY & LOGGING ---
+app.use(helmet());
+app.use(morgan('dev'));
+
+// Rate Limiter: Prevent brute force / DDoS on all APIs
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 300, 
+  message: { message: "Too many requests from this IP, please try again later." }
+});
+app.use('/api/', apiLimiter);
 
 // --- CORS FIX ---
 // We place this at the AT THE VERY TOP of the Express Stack!
@@ -108,6 +124,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/upload-resume', uploadRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Simple root route
 app.get('/', (req, res) => {

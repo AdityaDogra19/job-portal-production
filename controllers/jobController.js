@@ -196,6 +196,45 @@ const recommendJobs = async (req, res) => {
   }
 };
 
+// @route   POST /api/jobs/bookmark/:jobId
+const toggleBookmark = async (req, res) => {
+  try {
+    const User = require('../models/User');
+    const jobId = req.params.jobId;
+    const user = await User.findById(req.user.id);
+    
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const isBookmarked = user.bookmarkedJobs.includes(jobId);
+    if (isBookmarked) {
+      user.bookmarkedJobs = user.bookmarkedJobs.filter(id => id.toString() !== jobId.toString());
+    } else {
+      user.bookmarkedJobs.push(jobId);
+    }
+    
+    await user.save();
+    res.status(200).json({ 
+      message: isBookmarked ? 'Bookmark removed' : 'Job bookmarked', 
+      bookmarkedJobs: user.bookmarkedJobs 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @route   GET /api/jobs/bookmarks
+const getBookmarkedJobs = async (req, res) => {
+  try {
+    const User = require('../models/User');
+    const user = await User.findById(req.user.id).populate('bookmarkedJobs');
+    if (!user) return res.status(404).json({ message: "User not found" });
+    
+    res.status(200).json({ jobs: user.bookmarkedJobs });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   postJob,
   viewApplicants,
@@ -203,5 +242,7 @@ module.exports = {
   getJobById,
   applyToJob,
   getMyApplications,
-  recommendJobs
+  recommendJobs,
+  toggleBookmark,
+  getBookmarkedJobs
 };

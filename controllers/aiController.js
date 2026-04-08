@@ -51,10 +51,18 @@ const analyzeResume = async (req, res) => {
 
     // 2. Send to Gemini
     const prompt = `
-      You are an elite Senior Technical Recruiter. Analyze the following resume text.
-      Return your analysis STRICTLY as a raw JSON object with NO markdown, NO backticks, NO explanation — only valid JSON.
+      You are an elite Senior Technical Recruiter. Analyze this resume text and provide ATS breakdown scoring and suggestions.
+      Return your analysis STRICTLY as a raw JSON object with NO markdown, NO backticks.
       Use exactly this structure:
-      {"score":85,"missingSkills":["Docker","AWS","Kubernetes"],"strengths":["Strong React experience","Good project structure"],"suggestions":["Add measurable achievements","Include GitHub links"]}
+      {
+        "score": 85,
+        "formattingScore": 90,
+        "skillsScore": 80,
+        "experienceScore": 85,
+        "missingSkills": ["Docker","AWS","Kubernetes"],
+        "strengths": ["Strong React experience","Good project structure"],
+        "suggestions": ["Add measurable achievements","Include GitHub links"]
+      }
 
       Resume Text:
       ${resumeText.substring(0, 3000)}
@@ -66,6 +74,9 @@ const analyzeResume = async (req, res) => {
 
     res.status(200).json({
       score: parsed.score,
+      formattingScore: parsed.formattingScore || 0,
+      skillsScore: parsed.skillsScore || 0,
+      experienceScore: parsed.experienceScore || 0,
       missingSkills: parsed.missingSkills || [],
       strengths: parsed.strengths || [],
       suggestions: parsed.suggestions || []
@@ -77,6 +88,9 @@ const analyzeResume = async (req, res) => {
       // Graceful fallback when Gemini quota is exhausted
       return res.status(200).json({
         score: 82,
+        formattingScore: 85,
+        skillsScore: 80,
+        experienceScore: 81,
         missingSkills: ["System Design", "Cloud Architecture (AWS/GCP)"],
         strengths: ["Strong technical foundation", "Good project experience"],
         suggestions: [
@@ -118,8 +132,9 @@ const matchJobs = async (req, res) => {
       Available Jobs:
       ${jobsString}
 
+      Calculate rankings purely based on the explicit candidate skills vs the required job description keywords, applying a weighted ranking logically.
       Return STRICTLY raw JSON Array only — no markdown, no backticks. Top 5 matches sorted by highest match:
-      [{"jobId":"exact_id","matchPercentage":90,"reason":"Short reason here"}]
+      [{"jobId":"exact_id","matchPercentage":90,"reason":"Short reason here explaining skill alignments"}]
     `;
 
     const rawText = await askGemini(prompt);
@@ -195,4 +210,62 @@ const generatePitch = async (req, res) => {
   }
 };
 
-module.exports = { analyzeResume, matchJobs, generatePitch };
+// @route   POST /api/ai/skill-gap
+// @desc    Compare resume against a specific job and return gap analysis
+const skillGapAnalyzer = async (req, res) => {
+  try {
+    const { jobId } = req.body;
+    if (!jobId || !req.file) return res.status(400).json({ message: "Job ID and Resume PDF are required." });
+
+    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'your-gemini-api-key-here') {
+      return res.status(503).json({ message: 'Gemini API key not configured.' });
+    }
+
+    const Job = require('../models/Job');
+    const targetJob = await Job.findById(jobId);
+    if (!targetJob) return res.status(404).json({ message: "Job not found." });
+
+    const buffer = await getPdfBuffer(req.file);
+    let pdfData;
+    try {
+      pdfData = await pdfParse(buffer);
+    } catch(e) {
+      return res.status(400).json({ message: 'Failed to extract text from PDF.' });
+    }
+
+    const prompt = `
+      You are a technical screener. Analyze the candidate's resume against the target Job Description.
+      
+      Job Requirements:
+      ${targetJob.description}
+
+      Candidate Resume:
+      ${pdfData.text.substring(0, 3000)}
+
+      Return STRICTLY raw JSON only:
+      {
+        "missingCriticalSkills": ["skill1"],
+        "transferableSkills": ["skill2"],
+        "readinessScore": 70,
+        "advice": "Summary of what they need to learn to match this job."
+      }
+    `;
+
+    const rawText = await askGemini(prompt);
+    const cleanJson = rawText.replace(/```json/gi, '').replace(/```/gi, '').trim();
+    
+    res.status(200).json(JSON.parse(cleanJson));
+  } catch (error) {
+    if (error.message && error.message.includes('429')) {
+      return res.status(200).json({
+        missingCriticalSkills: ["Fallback: API Quota Exceeded"],
+        transferableSkills: ["Unknown"],
+        readinessScore: 0,
+        advice: "Gemini API daily quota reached. Please generate a new key."
+      });
+    }
+    res.status(500).json({ message: 'Skill gap analysis failed' });
+  }
+};
+
+module.exports = { analyzeResume, matchJobs, generatePitch, skillGapAnalyzer };

@@ -4,6 +4,10 @@ import Register from './pages/Register';
 import JobBoard from './pages/JobBoard';
 import JobDetails from './pages/JobDetails';
 import Analyzer from './pages/Analyzer';
+import Bookmarks from './pages/Bookmarks';
+import Profile from './pages/Profile';
+import Applications from './pages/Applications';
+import Layout from './components/Layout';
 
 // Protected Route: Kicks out logged-out users
 const ProtectedRoute = ({ children }) => {
@@ -22,15 +26,27 @@ export default function App() {
 
         {/* Protected Routes */}
         <Route path="/dashboard" element={
-          <ProtectedRoute><JobBoard /></ProtectedRoute>
+          <ProtectedRoute><Layout><JobBoard /></Layout></ProtectedRoute>
         } />
 
         <Route path="/jobs/:id" element={
-          <ProtectedRoute><JobDetails /></ProtectedRoute>
+          <ProtectedRoute><Layout><JobDetails /></Layout></ProtectedRoute>
         } />
 
         <Route path="/analyzer" element={
-          <ProtectedRoute><Analyzer /></ProtectedRoute>
+          <ProtectedRoute><Layout><Analyzer /></Layout></ProtectedRoute>
+        } />
+
+        <Route path="/bookmarks" element={
+          <ProtectedRoute><Layout><Bookmarks /></Layout></ProtectedRoute>
+        } />
+
+        <Route path="/profile" element={
+          <ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>
+        } />
+
+        <Route path="/admin/applications" element={
+          <ProtectedRoute><Layout><Applications /></Layout></ProtectedRoute>
         } />
 
         {/* Default: redirect to login */}

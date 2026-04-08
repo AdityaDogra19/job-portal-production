@@ -25,7 +25,11 @@ const userSchema = new mongoose.Schema(
     resume: {
       type: String, // Permanently stores the Cloudinary URL
       default: ''
-    }
+    },
+    bookmarkedJobs: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Job'
+    }]
   },
   {
     timestamps: true,

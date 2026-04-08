@@ -7,7 +7,9 @@ const {
   getJobById,
   applyToJob,
   getMyApplications,
-  recommendJobs
+  recommendJobs,
+  toggleBookmark,
+  getBookmarkedJobs
 } = require('../controllers/jobController');
 
 const { checkAuth, checkRole } = require('../middlewares/authMiddleware');
@@ -25,6 +27,12 @@ router.post('/recommendations', checkAuth, recommendJobs);
 
 // Get logged in user's applications (Applicant only)
 router.get('/my-applications', checkAuth, checkRole('applicant'), getMyApplications);
+
+// Bookmark a job
+router.post('/bookmark/:jobId', checkAuth, toggleBookmark);
+
+// Get explicitly bookmarked jobs
+router.get('/bookmarks', checkAuth, getBookmarkedJobs);
 
 // View all jobs (Publicly available, no auth required)
 router.get('/', viewJobs);
