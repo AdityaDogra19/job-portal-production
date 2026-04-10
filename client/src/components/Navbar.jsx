@@ -13,7 +13,7 @@ export default function Navbar() {
   const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
-    if (user.id) {
+    if (user._id) {
       const fetchNotifications = async () => {
         try {
           const res = await api.get('/notifications');
@@ -24,7 +24,7 @@ export default function Navbar() {
       };
       fetchNotifications();
     }
-  }, [user.id]);
+  }, [user._id]);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 

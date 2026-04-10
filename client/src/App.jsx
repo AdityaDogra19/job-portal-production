@@ -7,6 +7,7 @@ import Analyzer from './pages/Analyzer';
 import Bookmarks from './pages/Bookmarks';
 import Profile from './pages/Profile';
 import Applications from './pages/Applications';
+import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
 
 // Protected Route: Kicks out logged-out users
@@ -19,6 +20,7 @@ const ProtectedRoute = ({ children }) => {
 export default function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" reverseOrder={false} />
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
