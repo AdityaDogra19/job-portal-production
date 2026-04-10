@@ -40,7 +40,11 @@ app.use('/api/', apiLimiter);
 // We place this at the AT THE VERY TOP of the Express Stack!
 // This stops the Browser from blocking localhost:5001 from talking to localhost:5173
 app.use(cors({
-  origin: [process.env.FRONTEND_URL || 'http://localhost:5173', 'http://127.0.0.1:5173'], // Support Production Vercel Link!
+  origin: [
+    'http://localhost:5173', 
+    'http://127.0.0.1:5173', 
+    'https://job-portal-production-nine.vercel.app'
+  ], 
   credentials: true
 }));
 
