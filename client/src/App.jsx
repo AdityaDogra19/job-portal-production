@@ -6,7 +6,7 @@ import JobDetails from './pages/JobDetails';
 import Analyzer from './pages/Analyzer';
 import Bookmarks from './pages/Bookmarks';
 import Profile from './pages/Profile';
-import Applications from './pages/Applications';
+import AdminDashboard from './pages/AdminDashboard';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
 
@@ -48,7 +48,7 @@ export default function App() {
         } />
 
         <Route path="/admin/applications" element={
-          <ProtectedRoute><Layout><Applications /></Layout></ProtectedRoute>
+          <ProtectedRoute><Layout><AdminDashboard /></Layout></ProtectedRoute>
         } />
 
         {/* Default: redirect to login */}

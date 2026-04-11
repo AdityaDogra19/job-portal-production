@@ -7,7 +7,7 @@ import {
 import toast from 'react-hot-toast';
 import api from '../services/api';
 
-export default function AdminApplications() {
+export default function AdminDashboard() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
