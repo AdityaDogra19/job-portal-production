@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Briefcase, User, LogOut, Activity, Bookmark, FileText, Bell } from 'lucide-react';
+import { Briefcase, User, LogOut, Activity, Bookmark, FileText, Bell, MessageSquare, Moon, Sun } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
 
@@ -11,6 +11,19 @@ export default function Navbar() {
   const isAdmin = user.role === 'admin';
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Check initial dark mode state
+    if (document.documentElement.classList.contains('dark')) {
+      setIsDarkMode(true);
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    document.documentElement.classList.toggle('dark');
+    setIsDarkMode(!isDarkMode);
+  };
 
   useEffect(() => {
     if (user._id) {
@@ -48,6 +61,7 @@ export default function Navbar() {
     { path: '/analyzer', label: 'AI Analyzer', icon: Activity },
     ...(isAdmin ? [{ path: '/admin/applications', label: 'Applications', icon: FileText }] : []),
     { path: '/bookmarks', label: 'Saved Jobs', icon: Bookmark },
+    { path: '/chat', label: 'Chat', icon: MessageSquare },
     { path: '/profile', label: 'Profile', icon: User }
   ];
 
@@ -90,6 +104,15 @@ export default function Navbar() {
             })}
             
             <div className="h-6 w-px bg-slate-200 mx-2" />
+
+            {/* Dark Mode Toggle */}
+            <button 
+              onClick={toggleDarkMode}
+              className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+              title="Toggle Theme"
+            >
+              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
 
             {/* Notification Bell */}
             <div className="relative">

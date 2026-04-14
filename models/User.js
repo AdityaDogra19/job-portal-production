@@ -29,7 +29,20 @@ const userSchema = new mongoose.Schema(
     bookmarkedJobs: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Job'
-    }]
+    }],
+    openToWork: {
+      type: Boolean,
+      default: false
+    },
+    preferredRoles: [{
+      type: String
+    }],
+    preferredLocation: {
+      type: String
+    },
+    videoResume: {
+      type: String // URL link to a video resume hosted externally
+    }
   },
   {
     timestamps: true,

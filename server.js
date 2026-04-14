@@ -16,6 +16,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const http = require('http');
 const { Server } = require('socket.io');
@@ -129,6 +130,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/upload-resume', uploadRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/users', userRoutes);
 
 // Simple root route
 app.get('/', (req, res) => {

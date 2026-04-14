@@ -268,4 +268,66 @@ const skillGapAnalyzer = async (req, res) => {
   }
 };
 
-module.exports = { analyzeResume, matchJobs, generatePitch, skillGapAnalyzer };
+// @route   POST /api/ai/auto-apply
+// @desc    Find top 3 matching jobs and automatically submit applications
+const autoApplyAgent = async (req, res) => {
+  try {
+    const { skills, resume } = req.body;
+    if (!skills || !Array.isArray(skills) || !resume) {
+      return res.status(400).json({ message: "Skills array and resume URL are required for the Auto Apply Agent." });
+    }
+
+    const Job = require('../models/Job');
+    const Application = require('../models/Application');
+    const availableJobs = await Job.find().lean();
+    
+    // Simplistic text match scoring similar to recommendJobs
+    let rankedJobs = [];
+    const userSkillsCleaned = skills.map(skill => skill.toLowerCase());
+
+    availableJobs.forEach(job => {
+      let matchScore = 0;
+      const jobDataText = (job.title + " " + job.description).toLowerCase();
+      userSkillsCleaned.forEach(skill => {
+        if (jobDataText.includes(skill)) matchScore += 10;
+      });
+      if (matchScore >= 10) {
+        rankedJobs.push({ jobId: job._id, score: matchScore });
+      }
+    });
+
+    rankedJobs.sort((a, b) => b.score - a.score);
+    // Take Top 3 maximum to prevent mass spam
+    const targetJobs = rankedJobs.slice(0, 3);
+    
+    if (targetJobs.length === 0) {
+      return res.status(200).json({ message: "No highly matched jobs found to auto-apply to at this moment." });
+    }
+
+    const appliedJobs = [];
+    for (const item of targetJobs) {
+      // Check if already applied
+      const existing = await Application.findOne({ jobId: item.jobId, userId: req.user.id });
+      if (!existing) {
+        await Application.create({
+          jobId: item.jobId,
+          userId: req.user.id,
+          resume: resume
+        });
+        await Job.updateOne({ _id: item.jobId }, { $inc: { applicantCount: 1 } });
+        appliedJobs.push(item.jobId);
+      }
+    }
+
+    res.status(200).json({ 
+      message: `AI Agent successfully Auto-Applied to ${appliedJobs.length} matching jobs!`,
+      appliedJobIds: appliedJobs
+    });
+
+  } catch (error) {
+    console.error("AutoApply Agent Error:", error);
+    res.status(500).json({ message: "AutoApply Agent encountered an error." });
+  }
+};
+
+module.exports = { analyzeResume, matchJobs, generatePitch, skillGapAnalyzer, autoApplyAgent };

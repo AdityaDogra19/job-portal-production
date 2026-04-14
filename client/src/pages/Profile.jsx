@@ -10,8 +10,23 @@ import toast from 'react-hot-toast';
 
 export default function Profile() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
+  const [openToWork, setOpenToWork] = useState(user.openToWork || false);
+  const [videoResume, setVideoResume] = useState(user.videoResume || '');
+
+  const savePreferences = async () => {
+    const toastId = toast.loading('Saving preferences...');
+    try {
+      const res = await api.put('/users/open-to-work', {
+        openToWork,
+        videoResume
+      });
+      localStorage.setItem('user', JSON.stringify({ ...user, ...res.data.user }));
+      toast.success('Preferences updated!', { id: toastId });
+    } catch (err) {
+      toast.error('Failed to save preferences.', { id: toastId });
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -74,6 +89,44 @@ export default function Profile() {
               </div>
 
               <div className="mt-8 w-full space-y-4">
+                {/* Open To Work Toggle */}
+                <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                  <div className="flex flex-col">
+                    <span className="font-bold text-slate-900">#OpenToWork</span>
+                    <span className="text-xs text-slate-500 font-medium">Let recruiters know you are searching</span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={openToWork}
+                      onChange={(e) => {
+                        setOpenToWork(e.target.checked);
+                        // Save automatically when toggled
+                      }}
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                  </label>
+                </div>
+                
+                {/* Video Resume */}
+                <div className="flex flex-col gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <span className="font-bold text-slate-900 text-sm">Video Resume URL</span>
+                  <input 
+                    type="text" 
+                    placeholder="youtube.com/watch?v=..."
+                    className="w-full bg-white border border-slate-200 px-3 py-2 rounded-lg text-sm font-medium"
+                    value={videoResume}
+                    onChange={(e) => setVideoResume(e.target.value)}
+                  />
+                </div>
+                <button 
+                  onClick={savePreferences}
+                  className="w-full bg-slate-900 text-white font-bold text-xs uppercase tracking-widest py-3 rounded-xl hover:bg-blue-600 transition-colors"
+                >
+                  Save Profile Settings
+                </button>
+
                 <div className="flex items-center gap-3 text-slate-600 font-medium text-sm p-3 bg-slate-50 rounded-2xl border border-slate-100">
                   <Mail className="w-4 h-4 text-slate-400 shrink-0" />
                   <span className="truncate">{user.email}</span>

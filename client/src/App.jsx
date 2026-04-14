@@ -4,6 +4,7 @@ import Register from './pages/Register';
 import JobBoard from './pages/JobBoard';
 import JobDetails from './pages/JobDetails';
 import Analyzer from './pages/Analyzer';
+import Chat from './pages/Chat';
 import Bookmarks from './pages/Bookmarks';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
@@ -41,6 +42,10 @@ export default function App() {
 
         <Route path="/bookmarks" element={
           <ProtectedRoute><Layout><Bookmarks /></Layout></ProtectedRoute>
+        } />
+
+        <Route path="/chat" element={
+          <ProtectedRoute><Layout><Chat /></Layout></ProtectedRoute>
         } />
 
         <Route path="/profile" element={

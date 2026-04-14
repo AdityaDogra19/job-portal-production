@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { analyzeResume, matchJobs, generatePitch, skillGapAnalyzer } = require('../controllers/aiController');
+const { analyzeResume, matchJobs, generatePitch, skillGapAnalyzer, autoApplyAgent } = require('../controllers/aiController');
 const { checkAuth } = require('../middlewares/authMiddleware');
 const upload = require('../middlewares/uploadMiddleware');
 
@@ -16,5 +16,8 @@ router.post('/generate-pitch', checkAuth, upload.single('resume'), generatePitch
 
 // @route   POST /api/ai/skill-gap
 router.post('/skill-gap', checkAuth, upload.single('resume'), skillGapAnalyzer);
+
+// @route   POST /api/ai/auto-apply
+router.post('/auto-apply', checkAuth, autoApplyAgent);
 
 module.exports = router;
